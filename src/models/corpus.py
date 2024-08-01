@@ -41,16 +41,16 @@ Example usage:
 """
 
 from enum import Enum
-from typing import Dict, Generic, List, Set, Type, TypeVar, Union
+from typing import Dict, Generic, List, Set, TypeVar, Union
 
 from pydantic import BaseModel
 
 from src.models.text import Text
 
-TextT = TypeVar("TextT")  # , bound=Text) TODO
+TextT = TypeVar("TextT")
 
 
-class CorpusBase(BaseModel, Generic[TextT]):
+class _Base(BaseModel, Generic[TextT]):
     """
     Represents a corpus of texts.
 
@@ -59,9 +59,6 @@ class CorpusBase(BaseModel, Generic[TextT]):
     """
 
     texts: List[TextT] = []
-
-    def load(self, texts: List[dict]):
-        self.texts = [TextT(**text) for text in texts]
 
     def get_unique_values(self, whitelist) -> Dict[str, Set[str]]:
         """
@@ -111,60 +108,60 @@ class CorpusBase(BaseModel, Generic[TextT]):
 
 
 class Corpus:
-    class AdminEd1and2(CorpusBase[Text.AdminEd1and2]):
+    class CorpusAdminEd1and2(_Base[Text.AdminEd1and2]):
         pass
 
-    class AdminEd3a(CorpusBase[Text.AdminEd3a]):
+    class CorpusAdminEd3a(_Base[Text.AdminEd3a]):
         pass
 
-    class AdminEd3b(CorpusBase[Text.AdminEd3b]):
+    class CorpusAdminEd3b(_Base[Text.AdminEd3b]):
         pass
 
-    class AdminOldAkk(CorpusBase[Text.AdminOldAkk]):
+    class CorpusAdminOldAkk(_Base[Text.AdminOldAkk]):
         pass
 
-    class AdminLagash2(CorpusBase[Text.AdminLagash2]):
+    class CorpusAdminLagash2(_Base[Text.AdminLagash2]):
         pass
 
-    class AdminUr3(CorpusBase[Text.AdminUr3]):
+    class CorpusAdminUr3(_Base[Text.AdminUr3]):
         pass
 
-    class LiteraryEarly(CorpusBase[Text.LiteraryEarly]):
+    class CorpusLiteraryEarly(_Base[Text.LiteraryEarly]):
         pass
 
-    class LiteraryOldBab(CorpusBase[Text.LiteraryOldBab]):
+    class CorpusLiteraryOldBab(_Base[Text.LiteraryOldBab]):
         pass
 
-    class Incantations(CorpusBase[Text.Incantations]):
+    class CorpusIncantations(_Base[Text.Incantations]):
         pass
 
-    class Liturgies(CorpusBase[Text.Liturgies]):
+    class CorpusLiturgies(_Base[Text.Liturgies]):
         pass
 
-    class Royal(CorpusBase[Text.Royal]):
+    class CorpusRoyal(_Base[Text.Royal]):
         pass
 
-    class Udughul(CorpusBase[Text.Udughul]):
+    class CorpusUdughul(_Base[Text.Udughul]):
         pass
 
-    class Varia(CorpusBase[Text.Varia]):
+    class CorpusVaria(_Base[Text.Varia]):
         pass
 
 
 CorpusType = Union[
-    Corpus.AdminEd1and2,
-    Corpus.AdminEd3a,
-    Corpus.AdminEd3b,
-    Corpus.AdminOldAkk,
-    Corpus.AdminLagash2,
-    Corpus.AdminUr3,
-    Corpus.LiteraryEarly,
-    Corpus.LiteraryOldBab,
-    Corpus.Incantations,
-    Corpus.Liturgies,
-    Corpus.Royal,
-    Corpus.Udughul,
-    Corpus.Varia,
+    Corpus.CorpusAdminEd1and2,
+    Corpus.CorpusAdminEd3a,
+    Corpus.CorpusAdminEd3b,
+    Corpus.CorpusAdminOldAkk,
+    Corpus.CorpusAdminLagash2,
+    Corpus.CorpusAdminUr3,
+    Corpus.CorpusLiteraryEarly,
+    Corpus.CorpusLiteraryOldBab,
+    Corpus.CorpusIncantations,
+    Corpus.CorpusLiturgies,
+    Corpus.CorpusRoyal,
+    Corpus.CorpusUdughul,
+    Corpus.CorpusVaria,
 ]
 
 
@@ -229,42 +226,42 @@ class CorpusEnum(str, Enum):
 
         base = "http://oracc.museum.upenn.edu/json/"
         type_to_filename = {
-            CorpusType.ADMIN_ED_1_2: "epsd2-admin-ed12",
-            CorpusType.ADMIN_ED_3A: "epsd2-admin-ed3a",
-            CorpusType.ADMIN_ED_3B: "epsd2-admin-ed3b",
+            CorpusEnum.ADMIN_ED_1_2: "epsd2-admin-ed12",
+            CorpusEnum.ADMIN_ED_3A: "epsd2-admin-ed3a",
+            CorpusEnum.ADMIN_ED_3B: "epsd2-admin-ed3b",
             # CorpusType.ADMIN_EBLA: "epsd2-admin-ebla",
-            CorpusType.ADMIN_OAKK: "epsd2-admin-oakk",
-            CorpusType.ADMIN_LAGASH2: "epsd2-admin-lagash2",
-            CorpusType.ADMIN_UR3: "epsd2-admin-ur3",
+            CorpusEnum.ADMIN_OAKK: "epsd2-admin-oakk",
+            CorpusEnum.ADMIN_LAGASH2: "epsd2-admin-lagash2",
+            CorpusEnum.ADMIN_UR3: "epsd2-admin-ur3",
             # CorpusType.ADMIN_OLDBAB: "epsd2-admin/oldbab",
-            CorpusType.LITERARY_EARLY: "epsd2-earlylit",
-            CorpusType.LITERARY_OLDBAB: "epsd2-literary",
-            CorpusType.ROYAL: "epsd2-royal",
-            CorpusType.INCANTATIONS: "epsd2-praxis",
-            CorpusType.UDUGHUL: "epsd2-praxis-udughul",
-            CorpusType.LITURGIES: "epsd2-praxis-liturgy",
-            CorpusType.PRACTICAL_VARIA: "epsd2-praxis-varia",
+            CorpusEnum.LITERARY_EARLY: "epsd2-earlylit",
+            CorpusEnum.LITERARY_OLDBAB: "epsd2-literary",
+            CorpusEnum.ROYAL: "epsd2-royal",
+            CorpusEnum.INCANTATIONS: "epsd2-praxis",
+            CorpusEnum.UDUGHUL: "epsd2-praxis-udughul",
+            CorpusEnum.LITURGIES: "epsd2-praxis-liturgy",
+            CorpusEnum.PRACTICAL_VARIA: "epsd2-praxis-varia",
         }
         if self in type_to_filename:
             return f"{base}{type_to_filename[self]}.zip"
         raise ValueError("Invalid corpus")
 
     @property
-    def model(self) -> Type[CorpusBase]:
+    def model(self) -> CorpusType:
         return {
-            CorpusEnum.ADMIN_ED_1_2: Corpus.AdminEd1and2,
-            CorpusEnum.ADMIN_ED_3A: Corpus.AdminEd3a,
-            CorpusEnum.ADMIN_ED_3B: Corpus.AdminEd3b,
-            CorpusEnum.ADMIN_OAKK: Corpus.AdminOldAkk,
-            CorpusEnum.ADMIN_LAGASH2: Corpus.AdminLagash2,
-            CorpusEnum.ADMIN_UR3: Corpus.AdminUr3,
-            CorpusEnum.LITERARY_EARLY: Corpus.LiteraryEarly,
-            CorpusEnum.LITERARY_OLDBAB: Corpus.LiteraryOldBab,
-            CorpusEnum.ROYAL: Corpus.Royal,
-            CorpusEnum.INCANTATIONS: Corpus.Incantations,
-            CorpusEnum.LITURGIES: Corpus.Liturgies,
-            CorpusEnum.UDUGHUL: Corpus.Udughul,
-            CorpusEnum.PRACTICAL_VARIA: Corpus.Varia,
+            CorpusEnum.ADMIN_ED_1_2: Corpus.CorpusAdminEd1and2,
+            CorpusEnum.ADMIN_ED_3A: Corpus.CorpusAdminEd3a,
+            CorpusEnum.ADMIN_ED_3B: Corpus.CorpusAdminEd3b,
+            CorpusEnum.ADMIN_OAKK: Corpus.CorpusAdminOldAkk,
+            CorpusEnum.ADMIN_LAGASH2: Corpus.CorpusAdminLagash2,
+            CorpusEnum.ADMIN_UR3: Corpus.CorpusAdminUr3,
+            CorpusEnum.LITERARY_EARLY: Corpus.CorpusLiteraryEarly,
+            CorpusEnum.LITERARY_OLDBAB: Corpus.CorpusLiteraryOldBab,
+            CorpusEnum.ROYAL: Corpus.CorpusRoyal,
+            CorpusEnum.INCANTATIONS: Corpus.CorpusIncantations,
+            CorpusEnum.LITURGIES: Corpus.CorpusLiturgies,
+            CorpusEnum.UDUGHUL: Corpus.CorpusUdughul,
+            CorpusEnum.PRACTICAL_VARIA: Corpus.CorpusVaria,
         }[self]
 
 

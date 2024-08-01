@@ -14,7 +14,12 @@ pydantic = "^2.8.2"
 pandas = "^2.2.2"
 requests = "^2.32.3"
 tqdm = "^4.66.4"
+colorama = "^0.4.6"
+ipykernel = "^6.29.5"
 
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.5"
 
 [build-system]
 requires = ["poetry-core"]

@@ -17,10 +17,12 @@ Classes:
 """
 
 from enum import Enum
-from typing import Any, Dict, List, Literal, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Extra, Field, Tag
 from typing_extensions import Annotated
+
+from src.models.special_token import SpecialToken
 
 # ---------------  CLASSES ---------------
 
@@ -67,6 +69,27 @@ class Discontinuity(BaseModel):
     queried: str = Field("")
     flags: str = Field("")
     o: str = Field("")
+
+    def to_text(self):
+        if self.type_ == DiscontinuityType.OBJECT:
+            return None
+        if self.type_ == DiscontinuityType.LINE_START:
+            return "\n"
+        if self.type_ == DiscontinuityType.COLUMN:
+            return f"\n{SpecialToken.COLUMN.value}\n"
+        if self.type_ == DiscontinuityType.SURFACE:
+            return SpecialToken.SURFACE.value
+
+        if self.state == "missing":
+            return f"\n{SpecialToken.MISSING.value}\n"
+        if self.state == "blank":
+            if self.scope == "line":
+                return f"\n{SpecialToken.MISSING.value}\n"
+            if self.scope == "space":
+                return f"\n{SpecialToken.BLANK_SPACE.value}\n"
+            return None
+        if self.state == "ruling":
+            return f"\n{SpecialToken.RULING.value}\n"
 
 
 # ====================
@@ -238,3 +261,110 @@ def parse_cdl_node(node):
         return LinkbaseNode(**node)
 
     raise ValueError(f"Unknown node type: {node_type}")
+
+
+def extract_text_from_node(node: CDLNode) -> Optional[str]:
+    if type(node) is Discontinuity:
+        return node.to_text()
+    if type(node) is Lemma:
+        text = node.frag if node.frag else node.f.get("form", "")
+
+        # This is not the most precise, but it'll do...
+        # The "text" above often excludes opening or closing brackets
+        # in conjunction with parentheses or 'n', causing them to be unbalanced.
+        # This is a compromise between precision and not introducing more bugs.
+        ideal_bracket_seq = ""
+        for item in node.f.get("gdl", []):
+            for subitem in item.get("seq", []) + item.get("group", []):
+                ideal_bracket_seq += "[" if subitem.get("breakStart") else ""
+                ideal_bracket_seq += "]" if subitem.get("breakEnd") else ""
+            ideal_bracket_seq += "[" if item.get("breakStart") else ""
+            ideal_bracket_seq += "]" if item.get("breakEnd") else ""
+
+        # No brackets
+        if not ideal_bracket_seq:
+            return text
+
+        actual_bracket_seq = "".join([char for char in text if char in "[]"])
+
+        # It's got em all
+        if ideal_bracket_seq == actual_bracket_seq:
+            return text
+
+        # It's missing some
+        # -------------------
+        # 1. Simple open-and-shut
+        if ideal_bracket_seq.startswith("[") and ideal_bracket_seq.endswith("]"):
+            # This is designed to handle seqs like "abc]-def-[ghi]"
+            if not actual_bracket_seq.startswith("["):
+                text = "[" + text
+            if not actual_bracket_seq.endswith("]"):
+                text = text + "]"
+            # But there are still possible seqs like "abc]-[1(diš)-[ghi]"
+            # So if we still don't have it, just throw out all the nuance
+            # and wrap the whole thing.
+            actual_bracket_seq = "".join([char for char in text if char in "[]"])
+            if ideal_bracket_seq == actual_bracket_seq:
+                return text
+            text = text.replace("[", "").replace("]", "")
+            return "[" + text + "]"
+
+        # 2. Starts w/ closing
+        if ideal_bracket_seq.startswith("]") and not actual_bracket_seq.startswith("]"):
+            first_open_bracket_idx = text.find("[")
+            if first_open_bracket_idx == -1:
+                text = text + "]"
+            else:
+                text = (
+                    text[:first_open_bracket_idx] + "]" + text[first_open_bracket_idx:]
+                )
+
+        # 3. Ends w/ opening
+        if ideal_bracket_seq.endswith("[") and not actual_bracket_seq.endswith("["):
+            first_close_bracket_idx = text.find("]")
+            if first_close_bracket_idx == -1:
+                text = "[" + text
+            else:
+                text = (
+                    text[:first_close_bracket_idx]
+                    + "["
+                    + text[first_close_bracket_idx:]
+                )
+
+        # See if we got it now...
+        actual_bracket_seq = "".join([char for char in text if char in "[]"])
+        if ideal_bracket_seq == actual_bracket_seq:
+            return text
+
+        # Still no?!
+        text = text.replace("[", "").replace("]", "")
+        if "[]" in ideal_bracket_seq:
+            text = "[" + text + "]"
+        if ideal_bracket_seq.startswith("["):
+            text = "[" + text
+        if ideal_bracket_seq.endswith("]"):
+            text += "]"
+        return text
+
+    return None
+
+
+def crawl_cdl_for_text(cdl: List[CDLNode]) -> List[str]:
+    current_tokens: List[str] = []
+    langs = set()
+
+    for node in cdl:
+        if type(node) is Chunk:
+            tokens, langs_ = crawl_cdl_for_text(node.cdl)
+            current_tokens += tokens
+            langs |= langs_
+        if type(node) is Lemma:
+            lang = node.f.get("lang", "")
+            if lang:
+                langs.add(lang)
+        else:
+            text = extract_text_from_node(node)
+            if text:
+                current_tokens.append(text)
+
+    return current_tokens, langs

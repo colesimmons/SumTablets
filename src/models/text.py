@@ -6,16 +6,13 @@ These are attributes shared by texts in all corpora.
 
 import json
 import re
-from typing import List, Optional, Union
+from typing import List, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.models.cdl import (
     CDLNode,
-    Chunk,
-    Discontinuity,
-    DiscontinuityType,
-    Lemma,
+    crawl_cdl_for_text,
     parse_cdl_node,
 )
 from src.models.enums import (
@@ -30,8 +27,8 @@ from src.models.enums import (
 from src.models.special_token import SpecialToken
 
 
-class TextBase(BaseModel):
-    model_config = ConfigDict(extra="forbid")  # TODO add this to other models
+class _Base(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     dir_path: str
 
     cdl: List[CDLNode] = []
@@ -45,8 +42,7 @@ class TextBase(BaseModel):
 
     # Genre
     genre: Genre = Genre.UNSPECIFIED
-    # subgenre: Subgenre = Subgenre.UNSPECIFIED # TODO
-    subgenre: str = ""
+    subgenre: str = ""  # TODO use Subgenre enum
     supergenre: Supergenre = Supergenre.UNSPECIFIED
 
     # Provenience
@@ -106,20 +102,20 @@ class TextBase(BaseModel):
         special_token_format = r"#[\S]*?#"
 
         # TODO
-        def _without_special_tokens(text: str) -> str:
+        def without_special_tokens(text: str) -> str:
             text = re.sub(special_token_format, "", text)
             text = text.replace("\n", "")
             text = text.replace(" ", "")
             return text
 
-        tokens, langs = _crawl_cdl_for_text(self.cdl)
+        tokens, langs = crawl_cdl_for_text(self.cdl)
         self.langs = ", ".join(sorted(list(langs)))
         text = " ".join(tokens)
 
         # Only include surfaces if there are non-special tokens
         surfaces = text.split(SpecialToken.SURFACE.value)
         surfaces = [surface.strip() for surface in surfaces]
-        surfaces = [surface for surface in surfaces if _without_special_tokens(surface)]
+        surfaces = [surface for surface in surfaces if without_special_tokens(surface)]
 
         text = ""
         if surfaces:
@@ -133,22 +129,22 @@ class TextBase(BaseModel):
 
 
 class Text:
-    class AdminEd1and2(TextBase):
+    class AdminEd1and2(_Base):
         pass
 
-    class AdminEd3a(TextBase):
+    class AdminEd3a(_Base):
         pass
 
-    class AdminEd3b(TextBase):
+    class AdminEd3b(_Base):
         pass
 
-    class AdminOldAkk(TextBase):
+    class AdminOldAkk(_Base):
         pass
 
-    class AdminLagash2(TextBase):
+    class AdminLagash2(_Base):
         pass
 
-    class AdminUr3(TextBase):
+    class AdminUr3(_Base):
         acquisition_history: str = ""
         ark_number: str = ""
         atf_source: str = ""
@@ -183,7 +179,7 @@ class Text:
         translation_source: str = ""
         width: str = ""
 
-    class LiteraryEarly(TextBase):
+    class LiteraryEarly(_Base):
         id_composite: str = ""
         keywords: str = ""
         place: str = ""
@@ -192,7 +188,7 @@ class Text:
         def file_id(self) -> str:
             return self.id_composite if self.id_composite else self.id_text
 
-    class LiteraryOldBab(TextBase):
+    class LiteraryOldBab(_Base):
         id_composite: str = ""
         keywords: str = ""
         place: str = ""
@@ -207,13 +203,13 @@ class Text:
         def file_id(self) -> str:
             return self.id_composite if self.id_composite else self.id_text
 
-    class Incantations(TextBase):
+    class Incantations(_Base):
         pass
 
-    class Liturgies(TextBase):
+    class Liturgies(_Base):
         pass
 
-    class Royal(TextBase):
+    class Royal(_Base):
         id_composite: str = ""
         keywords: str = ""
         place: str = ""
@@ -227,10 +223,10 @@ class Text:
         def file_id(self) -> str:
             return self.id_composite if self.id_composite else self.id_text
 
-    class Udughul(TextBase):
+    class Udughul(_Base):
         pass
 
-    class Varia(TextBase):
+    class Varia(_Base):
         pass
 
 
@@ -249,146 +245,6 @@ TextType = Union[
     Text.Udughul,
     Text.Varia,
 ]
-
-# ================================================================
-# Utils
-# ================================================================
-
-
-def _discontinuity_to_text(node: Discontinuity) -> Optional[str]:
-    if node.type_ == DiscontinuityType.OBJECT:
-        return None
-    if node.type_ == DiscontinuityType.LINE_START:
-        return "\n"
-    if node.type_ == DiscontinuityType.COLUMN:
-        return f"\n{SpecialToken.COLUMN.value}\n"
-    if node.type_ == DiscontinuityType.SURFACE:
-        return SpecialToken.SURFACE.value
-
-    if node.state == "missing":
-        return f"\n{SpecialToken.MISSING.value}\n"
-    if node.state == "blank":
-        if node.scope == "line":
-            return f"\n{SpecialToken.MISSING.value}\n"
-        if node.scope == "space":
-            return f"\n{SpecialToken.BLANK_SPACE.value}\n"
-        return None
-    if node.state == "ruling":
-        return f"\n{SpecialToken.RULING.value}\n"
-
-    return None
-
-
-def _extract_text_from_node(node: CDLNode) -> Optional[str]:
-    if type(node) is Discontinuity:
-        return _discontinuity_to_text(node)
-    if type(node) is Lemma:
-        text = node.frag if node.frag else node.f.get("form", "")
-
-        # This is not the most precise, but it'll do...
-        # The "text" above often excludes opening or closing brackets
-        # in conjunction with parentheses or 'n', causing them to be unbalanced.
-        # This is a compromise between precision and not introducing more bugs.
-        ideal_bracket_seq = ""
-        for item in node.f.get("gdl", []):
-            for subitem in item.get("seq", []) + item.get("group", []):
-                ideal_bracket_seq += "[" if subitem.get("breakStart") else ""
-                ideal_bracket_seq += "]" if subitem.get("breakEnd") else ""
-            ideal_bracket_seq += "[" if item.get("breakStart") else ""
-            ideal_bracket_seq += "]" if item.get("breakEnd") else ""
-
-        # No brackets
-        if not ideal_bracket_seq:
-            return text
-
-        actual_bracket_seq = "".join([char for char in text if char in "[]"])
-
-        # It's got em all
-        if ideal_bracket_seq == actual_bracket_seq:
-            return text
-
-        # It's missing some
-        # -------------------
-        # 1. Simple open-and-shut
-        if ideal_bracket_seq.startswith("[") and ideal_bracket_seq.endswith("]"):
-            # This is designed to handle seqs like "abc]-def-[ghi]"
-            if not actual_bracket_seq.startswith("["):
-                text = "[" + text
-            if not actual_bracket_seq.endswith("]"):
-                text = text + "]"
-            # But there are still possible seqs like "abc]-[1(diš)-[ghi]"
-            # So if we still don't have it, just throw out all the nuance
-            # and wrap the whole thing.
-            actual_bracket_seq = "".join([char for char in text if char in "[]"])
-            if ideal_bracket_seq == actual_bracket_seq:
-                return text
-            text = text.replace("[", "").replace("]", "")
-            return "[" + text + "]"
-
-        # 2. Starts w/ closing
-        if ideal_bracket_seq.startswith("]") and not actual_bracket_seq.startswith("]"):
-            first_open_bracket_idx = text.find("[")
-            if first_open_bracket_idx == -1:
-                text = text + "]"
-            else:
-                text = (
-                    text[:first_open_bracket_idx] + "]" + text[first_open_bracket_idx:]
-                )
-
-        # 3. Ends w/ opening
-        if ideal_bracket_seq.endswith("[") and not actual_bracket_seq.endswith("["):
-            first_close_bracket_idx = text.find("]")
-            if first_close_bracket_idx == -1:
-                text = "[" + text
-            else:
-                text = (
-                    text[:first_close_bracket_idx]
-                    + "["
-                    + text[first_close_bracket_idx:]
-                )
-
-        # See if we got it now...
-        actual_bracket_seq = "".join([char for char in text if char in "[]"])
-        if ideal_bracket_seq == actual_bracket_seq:
-            return text
-
-        # Still no?!
-        text = text.replace("[", "").replace("]", "")
-        if "[]" in ideal_bracket_seq:
-            text = "[" + text + "]"
-        if ideal_bracket_seq.startswith("["):
-            text = "[" + text
-        if ideal_bracket_seq.endswith("]"):
-            text += "]"
-        return text
-
-    return None
-
-
-def _extract_lang_from_node(node: CDLNode) -> set:
-    if type(node) is Lemma:
-        return node.f.get("lang", "")
-    return ""
-
-
-def _crawl_cdl_for_text(cdl: List[CDLNode]) -> List[str]:
-    current_tokens: List[str] = []
-    langs = set()
-
-    for node in cdl:
-        if type(node) is Chunk:
-            tokens, langs_ = _crawl_cdl_for_text(node.cdl)
-            current_tokens += tokens
-            langs |= langs_
-        else:
-            text = _extract_text_from_node(node)
-            lang = _extract_lang_from_node(node)
-            if text:
-                current_tokens.append(text)
-            if lang:
-                langs.add(lang)
-
-    return current_tokens, langs
 
 
 __all__ = ["Text", "TextType"]
