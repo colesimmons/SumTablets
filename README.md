@@ -3,15 +3,7 @@
 
 [![huggingface](https://img.shields.io/badge/🤗%20Hugging%20Face-Dataset-yellow)](https://huggingface.co/datasets/colesimmons/sumtablets) ![Version](https://img.shields.io/badge/version-1-blue) [![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
 
-## Table of Contents
-- [Dataset information](#dataset)
-- [Publication](#publication)
-- [Description](#description)
-- [Acknowledgements](#acknowledgements)
-- [Versioning](#versioning)
-- [Contributing](#contributing)
-- [Code structure](#code-structure)
-- [License](#license)
+
   
 ## Dataset
 - **Name**: SumTablets
@@ -37,11 +29,19 @@ This repository contains the scripts and other resources used to create the [Sum
    
 3. **Reproducibility**. There are two factors that govern the end state of a dataset: (1) the source data and (2) the steps taken during preprocessing. To ensure the reproducibility of any experiments built on top of this data, we intend to use versioning to reflect when either of these change. See more in the [Versioning](#versioning) section below.
 
+## Table of Contents
+- [Acknowledgements](#acknowledgements)
+- [Versioning](#versioning)
+- [Contributing](#contributing)
+- [Code structure](#code-structure)
+- [License](#license)
+  
 ## Acknowledgements
 
 For nearly thirty years, Assyriologists have been manually typing and publishing transliterations online. These efforts began in 1996 with the [Electronic Text Corpus of Sumerian Literature](https://etcsl.orinst.ox.ac.uk/#), which became archival in 2006. It was soon followed by the [Cuneiform Digital Library Initiative (CDLI)](https://cdli.mpiwg-berlin.mpg.de/), the [Open Richly Annotated Cuneiform Corpus (Oracc)](https://oracc.museum.upenn.edu/), and others. Our work in particular pulls from the [Electronic Pennsylvania Sumerian Dictionary (ePSD2)](https://oracc.museum.upenn.edu/epsd2/index.html), which aggregates data from across the various Oracc projects. These projects have embraced the collaborative spirit and freely shared their data with each other and with the public.
 
 This dataset is only possible thanks to the hard work and generosity of contributors to all of these projects. To continue the tradition, we release this dataset with a CC-BY license.
+
 
 ## Versioning
 
