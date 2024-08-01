@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "sumtablets"
+version = "0.1.0"
+description = ""
+authors = ["Cole Simmons <colesimmons223@gmail.com>"]
+readme = "README.md"
+packages = [
+    { include = "src" }
+]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+pydantic = "^2.8.2"
+pandas = "^2.2.2"
+requests = "^2.32.3"
+tqdm = "^4.66.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
