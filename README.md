@@ -8,7 +8,7 @@
 - [Publication](#publication)
 - [Description](#description)
 - [Acknowledgements](#acknowledgements)
-- [Versioning][#versioning]
+- [Versioning](#versioning)
 - [Contributing](#contributing)
 - [Code structure](#code-structure)
 - [License](#license)
