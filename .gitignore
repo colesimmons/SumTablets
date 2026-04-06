@@ -1,6 +1,9 @@
 # Custom
-epsd2_data/
-outputs/
+data/source/
+data/source/
+data/source/
+data/generated/
+data/cache/
 .DS_STORE
 *.zip
 

@@ -1,0 +1,9 @@
+version: 1
+epsd2_snapshot: "2024-01-15"
+epsd2_archive: "https://drive.google.com/file/d/1gCubNGMb9_R0QcCyl4JwVAd5b-YKjL2Z"
+osl_snapshot: "2024-01-15"
+osl_archive: "https://drive.google.com/file/d/1qArSHeGsCHc3Fq6gdZiBLIvvObB5cIrU"
+pipeline_commit: null
+output_sha256: null
+rows: 91606
+glyphs: 6970407
